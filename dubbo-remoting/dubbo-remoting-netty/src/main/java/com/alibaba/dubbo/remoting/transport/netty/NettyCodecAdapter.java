@@ -94,11 +94,17 @@ final class NettyCodecAdapter {
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent event) throws Exception {
             Object o = event.getMessage();
+            /**
+             * 
+             *  如果是ChannelBuffer之外的消息，就发送
+             * */
             if (! (o instanceof ChannelBuffer)) {
                 ctx.sendUpstream(event);
                 return;
             }
-
+            /**
+             * 验证入站消息长度
+             * */
             ChannelBuffer input = (ChannelBuffer) o;
             int readable = input.readableBytes();
             if (readable <= 0) {
@@ -107,7 +113,13 @@ final class NettyCodecAdapter {
 
             com.alibaba.dubbo.remoting.buffer.ChannelBuffer message;
             if (buffer.readable()) {
+            	/**
+            	 * 如果buffer可读
+            	 * */
                 if (buffer instanceof DynamicChannelBuffer) {
+                	/**
+                	 * 动态管道缓冲 类型，直接转换成 字节缓冲
+                	 * */
                     buffer.writeBytes(input.toByteBuffer());
                     message = buffer;
                 } else {

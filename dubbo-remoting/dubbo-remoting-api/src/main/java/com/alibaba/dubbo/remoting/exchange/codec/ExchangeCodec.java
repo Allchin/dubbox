@@ -71,6 +71,11 @@ public class ExchangeCodec extends TelnetCodec {
         return MAGIC;
     }
 
+    /*  
+     * 这个msg没有序列化，buffer的内存分配多少合适？
+     * 看上层NettyCodecAdapter.InternalEncoder
+     * 主要是ChannelBuffers.dynamicBuffer(1024)分配了动态大小的Buffer
+     * */
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
         if (msg instanceof Request) {
             encodeRequest(channel, buffer, (Request) msg);
@@ -166,11 +171,21 @@ public class ExchangeCodec extends TelnetCodec {
 
     protected Object decodeBody(Channel channel, InputStream is, byte[] header) throws IOException {
         byte flag = header[2], proto = (byte) (flag & SERIALIZATION_MASK);
+        /**
+         * flag是一个混合字段，包含序列化方式，事件类型,
+         * 提取序列化方式时要用到掩码
+         * */
         Serialization s = CodecSupport.getSerialization(channel.getUrl(), proto);
         ObjectInput in = s.deserialize(channel.getUrl(), is);
         // get request id.
+        /**
+         * 64字节的请求id
+         * */
         long id = Bytes.bytes2long(header, 4);
         if ((flag & FLAG_REQUEST) == 0) {
+        	/**
+        	 * flag掩码运算后，分析出这个是服务端发的一个响应包
+        	 * */
             // decode response.
             Response res = new Response(id);
             if ((flag & FLAG_EVENT) != 0) {
@@ -199,6 +214,9 @@ public class ExchangeCodec extends TelnetCodec {
             }
             return res;
         } else {
+        	/**
+        	 * 处理客户端的请求包
+        	 * */
             // decode request.
             Request req = new Request(id);
             req.setVersion("2.0.0");

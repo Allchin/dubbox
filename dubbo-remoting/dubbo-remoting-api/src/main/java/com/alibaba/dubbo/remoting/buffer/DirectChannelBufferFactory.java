@@ -19,6 +19,7 @@ package com.alibaba.dubbo.remoting.buffer;
 import java.nio.ByteBuffer;
 
 /**
+ * 将java 原生的nio ByteBuffer 封装成ChannelBuffer
  * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
  */
 public class DirectChannelBufferFactory implements ChannelBufferFactory {
