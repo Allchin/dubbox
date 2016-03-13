@@ -95,10 +95,16 @@ public class ExchangeCodec extends TelnetCodec {
         return decode(channel, buffer, readable, header);
     }
     
+    /* (non-Javadoc)
+     * @see com.alibaba.dubbo.remoting.telnet.codec.TelnetCodec#decode(com.alibaba.dubbo.remoting.Channel, com.alibaba.dubbo.remoting.buffer.ChannelBuffer, int, byte[])
+     */
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] header) throws IOException {
         // check magic number.
         if (readable > 0 && header[0] != MAGIC_HIGH 
                 || readable > 1 && header[1] != MAGIC_LOW) {
+        	/**
+        	 * 用魔数半包检查，如果是是半包进行处理 TODO 细节
+        	 * */
             int length = header.length;
             if (header.length < readable) {
                 header = Bytes.copyOf(header, readable);
@@ -113,15 +119,27 @@ public class ExchangeCodec extends TelnetCodec {
             }
             return super.decode(channel, buffer, readable, header);
         }
+        /**
+         * 那下面的操作针对至少是第一个包，或者是个全包
+         * */
+        /**
+         * 这个包还没有协议头大，就认定是半包
+         * */
         // check length.
         if (readable < HEADER_LENGTH) {
             return DecodeResult.NEED_MORE_INPUT;
         }
-
+        
+        /**
+         * 包长度检查，太大会抛异常
+         * */
         // get data length.
         int len = Bytes.bytes2int(header, 12);
         checkPayload(channel, len);
 
+        /**
+         * 头+数据的长度为tt，可读内容如果比tt小，认为是半包
+         * */
         int tt = len + HEADER_LENGTH;
         if( readable < tt ) {
             return DecodeResult.NEED_MORE_INPUT;
